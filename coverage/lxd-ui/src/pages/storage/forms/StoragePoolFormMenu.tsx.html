@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">75.94% </span>
+                <span class="strong">72.04% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>60/79</span>
+                <span class='fraction'>67/93</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">42.85% </span>
+                <span class="strong">30% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>6/14</span>
+                <span class='fraction'>6/20</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">93.75% </span>
+                <span class="strong">88.15% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>60/64</span>
+                <span class='fraction'>67/76</span>
             </div>
         
             
@@ -127,7 +127,19 @@
 <a name='L62'></a><a href='#L62'>62</a>
 <a name='L63'></a><a href='#L63'>63</a>
 <a name='L64'></a><a href='#L64'>64</a>
-<a name='L65'></a><a href='#L65'>65</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">4x</span>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">4x</span>
@@ -147,6 +159,9 @@
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-yes">24x</span>
@@ -158,6 +173,8 @@
 <span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">22x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-yes">24x</span>
@@ -168,6 +185,13 @@
 <span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-yes">24x</span>
+<span class="cline-any cline-yes">24x</span>
+<span class="cline-any cline-yes">24x</span>
+<span class="cline-any cline-yes">24x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-yes">24x</span>
@@ -198,10 +222,12 @@ import { updateMaxHeight } from "util/updateMaxHeight";
 import useEventListener from "@use-it/event-listener";
 import { FormikProps } from "formik";
 import { StoragePoolFormValues } from "./StoragePoolForm";
-import { cephDriver, zfsDriver } from "util/storageOptions";
+import { cephDriver, powerFlex, zfsDriver } from "util/storageOptions";
+import { isPowerflexIncomplete } from "util/storagePool";
 &nbsp;
 export const MAIN_CONFIGURATION = <span class="cstat-no" title="statement not covered" >"Main configuration";</span>
 export const CEPH_CONFIGURATION = <span class="cstat-no" title="statement not covered" >"Ceph";</span>
+export const POWERFLEX = <span class="cstat-no" title="statement not covered" >"Powerflex";</span>
 export const ZFS_CONFIGURATION = <span class="cstat-no" title="statement not covered" >"ZFS";</span>
 &nbsp;
 interface Props {
@@ -218,10 +244,13 @@ const StoragePoolFormMenu: FC&lt;Props&gt; = <span class="cstat-no" title="state
   };
 &nbsp;
   const isCephDriver = <span class="cstat-no" title="statement not covered" >formik.values.driver === cephDriver;</span>
+  const isPowerFlexDriver = <span class="cstat-no" title="statement not covered" >formik.values.driver === powerFlex;</span>
   const isZfsDriver = <span class="cstat-no" title="statement not covered" >formik.values.driver === zfsDriver;</span>
   const hasName = <span class="cstat-no" title="statement not covered" >formik.values.name.length &gt; 0;</span>
   const disableReason = <span class="cstat-no" title="statement not covered" >hasName</span>
-    ? undefined
+    ? isPowerflexIncomplete(formik<span class="branch-0 cbranch-no" title="branch not covered" >)</span>
+<span class="cstat-no" title="statement not covered" >      ? "Please enter a domain, gateway, pool, and user name to enable this section"</span>
+      : undefined
     : "Please enter a storage pool name to enable this section";
 &nbsp;
   const resize = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
@@ -237,6 +266,13 @@ const StoragePoolFormMenu: FC&lt;Props&gt; = <span class="cstat-no" title="state
           {<span class="branch-0 cbranch-no" title="branch not covered" >isCephDriver &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >            &lt;MenuItem</span>
 <span class="cstat-no" title="statement not covered" >              label={CEPH_CONFIGURATION}</span>
+<span class="cstat-no" title="statement not covered" >              {...menuItemProps}</span>
+<span class="cstat-no" title="statement not covered" >              disableReason={disableReason}</span>
+            /&gt;
+          )}
+          {<span class="branch-0 cbranch-no" title="branch not covered" >isPowerFlexDriver &amp;&amp; (</span>
+<span class="cstat-no" title="statement not covered" >            &lt;MenuItem</span>
+<span class="cstat-no" title="statement not covered" >              label={POWERFLEX}</span>
 <span class="cstat-no" title="statement not covered" >              {...menuItemProps}</span>
 <span class="cstat-no" title="statement not covered" >              disableReason={disableReason}</span>
             /&gt;
@@ -262,7 +298,7 @@ export default StoragePoolFormMenu;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2024-03-06T08:56:32.816Z
+                at 2024-03-11T08:47:52.582Z
             </div>
         <script src="../../../../../prettify.js"></script>
         <script>
