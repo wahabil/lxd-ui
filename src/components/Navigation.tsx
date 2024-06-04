@@ -1,21 +1,23 @@
 import { FC, MouseEvent, useEffect, useState } from "react";
-import { Button, Icon } from "@canonical/react-components";
+import {
+  Button,
+  Icon,
+  SideNavigation,
+  SideNavigationItem,
+  SideNavigationLink,
+} from "@canonical/react-components";
 import { useAuth } from "context/auth";
 import classnames from "classnames";
-import Logo from "./Logo";
 import ProjectSelector from "pages/projects/ProjectSelector";
-import { getElementAbsoluteHeight, isWidthBelow, logout } from "util/helpers";
+import { getElementAbsoluteHeight, logout } from "util/helpers";
 import { useProject } from "context/project";
-import { useMenuCollapsed } from "context/menuCollapsed";
 import { useDocs } from "context/useDocs";
 import NavLink from "components/NavLink";
 import { useSupportedFeatures } from "context/useSupportedFeatures";
 import NavAccordion, { AccordionNavMenu } from "./NavAccordion";
 import useEventListener from "@use-it/event-listener";
 import { enablePermissionsFeature } from "util/permissions";
-import { Location, useLocation } from "react-router-dom";
-
-const isSmallScreen = () => isWidthBelow(620);
+import { Location, NavLinkProps, useLocation } from "react-router-dom";
 
 const initialiseOpenNavMenus = (location: Location) => {
   const openPermissions = location.pathname.includes("permissions");
@@ -32,10 +34,21 @@ const initialiseOpenNavMenus = (location: Location) => {
   return initialOpenMenus;
 };
 
-const Navigation: FC = () => {
+type Props = {
+  hardToggleMenu: () => void;
+  menuCollapsed: boolean;
+  setMenuCollapsed: (menuCollapsed: boolean) => void;
+  softToggleMenu: () => void;
+};
+
+const Navigation: FC<Props> = ({
+  menuCollapsed,
+  hardToggleMenu,
+  setMenuCollapsed,
+  softToggleMenu,
+}) => {
   const { isRestricted, isOidc } = useAuth();
   const docBaseLink = useDocs();
-  const { menuCollapsed, setMenuCollapsed } = useMenuCollapsed();
   const { project, isLoading } = useProject();
   const [projectName, setProjectName] = useState(
     project && !isLoading ? project.name : "default",
@@ -72,17 +85,6 @@ const Navigation: FC = () => {
   useEffect(() => {
     adjustNavigationScrollForOverflow();
   }, [openNavMenus, isAuthenticated]);
-
-  const softToggleMenu = () => {
-    if (isSmallScreen()) {
-      setMenuCollapsed((prev) => !prev);
-    }
-  };
-
-  const hardToggleMenu = (e: MouseEvent<HTMLElement>) => {
-    setMenuCollapsed((prev) => !prev);
-    e.stopPropagation();
-  };
 
   const adjustNavigationScrollForOverflow = () => {
     const navHeader = document.querySelector(".l-navigation .p-panel__header");
@@ -136,403 +138,269 @@ const Navigation: FC = () => {
 
   return (
     <>
-      <header className="l-navigation-bar">
-        <div className="p-panel is-dark">
-          <div className="p-panel__header">
-            <Logo />
-            <div className="p-panel__controls">
-              <Button
-                dense
-                className="p-panel__toggle"
-                onClick={hardToggleMenu}
-              >
-                Menu
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-      <nav
-        aria-label="main navigation"
-        className={classnames("l-navigation", {
-          "is-collapsed": menuCollapsed,
-          "is-pinned": !menuCollapsed,
-          "is-scroll": scroll,
+      <SideNavigation<NavLinkProps>
+        dark
+        items={[
+          {
+            className: "sidenav-top-ul",
+            items: isAuthenticated
+              ? [
+                  {
+                    children: (
+                      <ProjectSelector
+                        key={location.pathname}
+                        activeProject={projectName}
+                      />
+                    ),
+                    onClick: (e: MouseEvent) => e.stopPropagation(),
+                  },
+                  {
+                    icon: "containers",
+                    label: "Instances",
+                    onClick: softToggleMenu,
+                    title: `Instances (${projectName})`,
+                    to: `/ui/project/${projectName}/instances`,
+                  },
+                  {
+                    icon: "units",
+                    label: "Profiles",
+                    onClick: softToggleMenu,
+                    title: `Profiles (${projectName})`,
+                    to: `/ui/project/${projectName}/profiles`,
+                  },
+                  {
+                    icon: "connected",
+                    label: "Networks",
+                    onClick: softToggleMenu,
+                    title: `Networks (${projectName})`,
+                    to: `/ui/project/${projectName}/networks`,
+                  },
+                  {
+                    icon: "connected",
+                    label: "Networks",
+                    onClick: softToggleMenu,
+                    title: `Networks (${projectName})`,
+                    to: `/ui/project/${projectName}/networks`,
+                  },
+                  <NavAccordion
+                    baseUrl={`/ui/project/${projectName}/storage`}
+                    title={`Storage (${projectName})`}
+                    iconName="pods"
+                    key="storage"
+                    label="Storage"
+                    onOpen={() => toggleAccordionNav("storage")}
+                    open={openNavMenus.includes("storage")}
+                  >
+                    {[
+                      <SideNavigationItem
+                        key={`/ui/project/${projectName}/storage/pools`}
+                      >
+                        <NavLink
+                          to={`/ui/project/${projectName}/storage/pools`}
+                          title="Pools"
+                          onClick={softToggleMenu}
+                          className="accordion-nav-secondary"
+                        >
+                          Pools
+                        </NavLink>
+                      </SideNavigationItem>,
+                      <SideNavigationItem
+                        key={`/ui/project/${projectName}/storage/volumes`}
+                      >
+                        <NavLink
+                          to={`/ui/project/${projectName}/storage/volumes`}
+                          title="Volumes"
+                          onClick={softToggleMenu}
+                          className="accordion-nav-secondary"
+                        >
+                          Volumes
+                        </NavLink>
+                      </SideNavigationItem>,
+                      ...(hasCustomVolumeIso
+                        ? [
+                            <SideNavigationItem
+                              key={`/ui/project/${projectName}/storage/custom-isos`}
+                            >
+                              <NavLink
+                                to={`/ui/project/${projectName}/storage/custom-isos`}
+                                title="Custom ISOs"
+                                onClick={softToggleMenu}
+                                className="accordion-nav-secondary"
+                              >
+                                Custom ISOs
+                              </NavLink>
+                            </SideNavigationItem>,
+                          ]
+                        : []),
+                    ]}
+                  </NavAccordion>,
+                  {
+                    icon: "applications",
+                    label: "Images",
+                    onClick: softToggleMenu,
+                    title: `Images (${projectName})`,
+                    to: `/ui/project/${projectName}/images`,
+                  },
+                  {
+                    icon: "switcher-environments",
+                    label: "Configuration",
+                    onClick: softToggleMenu,
+                    title: `Configuration (${projectName})`,
+                    to: `/ui/project/${projectName}/configuration`,
+                  },
+                  <hr className="is-dark navigation-hr" key="hr" />,
+                  {
+                    icon: "machines",
+                    label: "Cluster",
+                    onClick: softToggleMenu,
+                    title: "Cluster",
+                    to: "/ui/cluster",
+                  },
+                  {
+                    icon: "status",
+                    label: "Operations",
+                    onClick: softToggleMenu,
+                    title: `Operations (${projectName})`,
+                    to: "/ui/operations",
+                  },
+                  isRestricted
+                    ? null
+                    : {
+                        icon: "warning-grey",
+                        label: "Warnings",
+                        onClick: softToggleMenu,
+                        title: "Warnings",
+                        to: "/ui/warnings",
+                      },
+                  enablePermissions ? (
+                    <NavAccordion
+                      baseUrl="/ui/permissions"
+                      title={`Permissions`}
+                      iconName="user"
+                      key="permissions"
+                      label="Permissions"
+                      onOpen={() => toggleAccordionNav("permissions")}
+                      open={openNavMenus.includes("permissions")}
+                    >
+                      {[
+                        <SideNavigationItem key="/ui/permissions/identities">
+                          <NavLink
+                            to="/ui/permissions/identities"
+                            title="Identities"
+                            onClick={softToggleMenu}
+                            activeUrlMatches={["permissions/identity"]}
+                            className="accordion-nav-secondary"
+                          >
+                            Identities
+                          </NavLink>
+                        </SideNavigationItem>,
+                        <SideNavigationItem key="/ui/permissions/groups">
+                          <NavLink
+                            to="/ui/permissions/groups"
+                            title="LXD groups"
+                            onClick={softToggleMenu}
+                            className="accordion-nav-secondary"
+                          >
+                            Groups
+                          </NavLink>
+                        </SideNavigationItem>,
+                        <SideNavigationItem key="/ui/permissions/idp-groups">
+                          <NavLink
+                            to="/ui/permissions/idp-groups"
+                            title="Identity provider groups"
+                            onClick={softToggleMenu}
+                            className="accordion-nav-secondary"
+                          >
+                            IDP groups
+                          </NavLink>
+                        </SideNavigationItem>,
+                      ]}
+                    </NavAccordion>
+                  ) : null,
+                  {
+                    icon: "settings",
+                    label: "Settings",
+                    onClick: softToggleMenu,
+                    title: "Settings",
+                    to: "/ui/settings",
+                  },
+                  isOidc ? (
+                    <SideNavigationLink
+                      icon="power-off"
+                      label="Log out"
+                      onClick={() => {
+                        logout();
+                        softToggleMenu();
+                      }}
+                      title="Log out"
+                    />
+                  ) : null,
+                ]
+              : [
+                  {
+                    icon: "profile",
+                    label: "Login",
+                    onClick: softToggleMenu,
+                    title: "Login",
+                    to: "/ui/login",
+                  },
+                ],
+          },
+          {
+            className: classnames("sidenav-bottom-ul", {
+              "authenticated-nav": isAuthenticated,
+            }),
+            items: [
+              <SideNavigationLink
+                href={docBaseLink}
+                icon="information"
+                key="docs"
+                label="Documentation"
+                rel="noopener noreferrer"
+                target="_blank"
+                title="Documentation"
+              />,
+              <SideNavigationLink
+                href="https://discourse.ubuntu.com/c/lxd/126"
+                icon="share"
+                key="discussion"
+                label="Discussion"
+                rel="noopener noreferrer"
+                target="_blank"
+                title="Discussion"
+              />,
+              <SideNavigationLink
+                href="https://github.com/canonical/lxd-ui/issues/new"
+                icon="code"
+                key="bug"
+                label="Report a bug"
+                rel="noopener noreferrer"
+                target="_blank"
+                title="Report a bug"
+              />,
+            ],
+          },
+        ]}
+        linkComponent={NavLink}
+      />
+      <div
+        className={classnames("sidenav-toggle-wrapper", {
+          "authenticated-nav": isAuthenticated,
         })}
       >
-        <div className="l-navigation__drawer">
-          <div className="p-panel is-dark">
-            <div className="p-panel__header is-sticky">
-              <Logo />
-              <div className="p-panel__controls u-hide--medium u-hide--large">
-                <Button
-                  appearance="base"
-                  hasIcon
-                  className="u-no-margin"
-                  aria-label="close navigation"
-                  onClick={hardToggleMenu}
-                >
-                  <Icon name="close" />
-                </Button>
-              </div>
-            </div>
-            <div className="p-panel__content">
-              <div className="p-side-navigation--icons is-dark">
-                <ul className="p-side-navigation__list sidenav-top-ul">
-                  {isAuthenticated && (
-                    <>
-                      <li onClick={(e) => e.stopPropagation()}>
-                        <ProjectSelector
-                          key={location.pathname}
-                          activeProject={projectName}
-                        />
-                      </li>
-                      <li className="p-side-navigation__item">
-                        <NavLink
-                          to={`/ui/project/${projectName}/instances`}
-                          title={`Instances (${projectName})`}
-                          onClick={softToggleMenu}
-                        >
-                          <Icon
-                            className="is-light p-side-navigation__icon"
-                            name="containers"
-                          />{" "}
-                          Instances
-                        </NavLink>
-                      </li>
-                      <li className="p-side-navigation__item">
-                        <NavLink
-                          to={`/ui/project/${projectName}/profiles`}
-                          title={`Profiles (${projectName})`}
-                          onClick={softToggleMenu}
-                        >
-                          <Icon
-                            className="is-light p-side-navigation__icon"
-                            name="units"
-                          />{" "}
-                          Profiles
-                        </NavLink>
-                      </li>
-                      <li className="p-side-navigation__item">
-                        <NavLink
-                          to={`/ui/project/${projectName}/networks`}
-                          title={`Networks (${projectName})`}
-                          onClick={softToggleMenu}
-                        >
-                          <Icon
-                            className="is-light p-side-navigation__icon"
-                            name="connected"
-                          />{" "}
-                          Networks
-                        </NavLink>
-                      </li>
-                      <li className="p-side-navigation__item">
-                        <NavAccordion
-                          baseUrl={`/ui/project/${projectName}/storage`}
-                          title={`Storage (${projectName})`}
-                          iconName="pods"
-                          label="Storage"
-                          onOpen={() => toggleAccordionNav("storage")}
-                          open={openNavMenus.includes("storage")}
-                        >
-                          {[
-                            <li
-                              className="p-side-navigation__item"
-                              key={`/ui/project/${projectName}/storage/pools`}
-                            >
-                              <NavLink
-                                to={`/ui/project/${projectName}/storage/pools`}
-                                title="Pools"
-                                onClick={softToggleMenu}
-                                className="accordion-nav-secondary"
-                              >
-                                Pools
-                              </NavLink>
-                            </li>,
-                            <li
-                              className="p-side-navigation__item"
-                              key={`/ui/project/${projectName}/storage/volumes`}
-                            >
-                              <NavLink
-                                to={`/ui/project/${projectName}/storage/volumes`}
-                                title="Volumes"
-                                onClick={softToggleMenu}
-                                className="accordion-nav-secondary"
-                              >
-                                Volumes
-                              </NavLink>
-                            </li>,
-                            ...(hasCustomVolumeIso
-                              ? [
-                                  <li
-                                    className="p-side-navigation__item"
-                                    key={`/ui/project/${projectName}/storage/custom-isos`}
-                                  >
-                                    <NavLink
-                                      to={`/ui/project/${projectName}/storage/custom-isos`}
-                                      title="Custom ISOs"
-                                      onClick={softToggleMenu}
-                                      className="accordion-nav-secondary"
-                                    >
-                                      Custom ISOs
-                                    </NavLink>
-                                  </li>,
-                                ]
-                              : []),
-                          ]}
-                        </NavAccordion>
-                      </li>
-                      <li className="p-side-navigation__item">
-                        <NavLink
-                          to={`/ui/project/${projectName}/images`}
-                          title={`Images (${projectName})`}
-                          onClick={softToggleMenu}
-                        >
-                          <Icon
-                            className="is-light p-side-navigation__icon"
-                            name="applications"
-                          />{" "}
-                          Images
-                        </NavLink>
-                      </li>
-                      <li className="p-side-navigation__item">
-                        <NavLink
-                          to={`/ui/project/${projectName}/configuration`}
-                          title={`Configuration (${projectName})`}
-                          onClick={softToggleMenu}
-                        >
-                          <Icon
-                            className="is-light p-side-navigation__icon"
-                            name="switcher-environments"
-                          />{" "}
-                          Configuration
-                        </NavLink>
-                      </li>
-                      <hr className="is-dark navigation-hr" />
-                      <li className="p-side-navigation__item">
-                        <NavLink
-                          to="/ui/cluster"
-                          title="Cluster"
-                          onClick={softToggleMenu}
-                        >
-                          <Icon
-                            className="is-light p-side-navigation__icon"
-                            name="machines"
-                          />{" "}
-                          Cluster
-                        </NavLink>
-                      </li>
-                      <li className="p-side-navigation__item">
-                        <NavLink
-                          to={`/ui/operations`}
-                          title={`Operations (${projectName})`}
-                          onClick={softToggleMenu}
-                        >
-                          <Icon
-                            className="is-light p-side-navigation__icon"
-                            name="status"
-                          />{" "}
-                          Operations
-                        </NavLink>
-                      </li>
-                      {!isRestricted && (
-                        <li className="p-side-navigation__item">
-                          <NavLink
-                            to="/ui/warnings"
-                            title="Warnings"
-                            onClick={softToggleMenu}
-                          >
-                            <Icon
-                              className="is-light p-side-navigation__icon"
-                              name="warning-grey"
-                            />{" "}
-                            Warnings
-                          </NavLink>
-                        </li>
-                      )}
-                      {enablePermissions && (
-                        <li className="p-side-navigation__item">
-                          <NavAccordion
-                            baseUrl="/ui/permissions"
-                            title={`Permissions`}
-                            iconName="user"
-                            label="Permissions"
-                            onOpen={() => toggleAccordionNav("permissions")}
-                            open={openNavMenus.includes("permissions")}
-                          >
-                            {[
-                              <li
-                                className="p-side-navigation__item"
-                                key="/ui/permissions/identities"
-                              >
-                                <NavLink
-                                  to="/ui/permissions/identities"
-                                  title="Identities"
-                                  onClick={softToggleMenu}
-                                  activeUrlMatches={["permissions/identity"]}
-                                  className="accordion-nav-secondary"
-                                >
-                                  Identities
-                                </NavLink>
-                              </li>,
-                              <li
-                                className="p-side-navigation__item"
-                                key="/ui/permissions/groups"
-                              >
-                                <NavLink
-                                  to="/ui/permissions/groups"
-                                  title="LXD groups"
-                                  onClick={softToggleMenu}
-                                  className="accordion-nav-secondary"
-                                >
-                                  Groups
-                                </NavLink>
-                              </li>,
-                              <li
-                                className="p-side-navigation__item"
-                                key="/ui/permissions/idp-groups"
-                              >
-                                <NavLink
-                                  to="/ui/permissions/idp-groups"
-                                  title="Identity provider groups"
-                                  onClick={softToggleMenu}
-                                  className="accordion-nav-secondary"
-                                >
-                                  IDP groups
-                                </NavLink>
-                              </li>,
-                            ]}
-                          </NavAccordion>
-                        </li>
-                      )}
-                      <li className="p-side-navigation__item">
-                        <NavLink
-                          to="/ui/settings"
-                          title="Settings"
-                          onClick={softToggleMenu}
-                        >
-                          <Icon
-                            className="is-light p-side-navigation__icon"
-                            name="settings"
-                          />{" "}
-                          Settings
-                        </NavLink>
-                      </li>
-                      {isOidc && (
-                        <li className="p-side-navigation__item">
-                          <a
-                            className="p-side-navigation__link"
-                            title="Log out"
-                            onClick={() => {
-                              logout();
-                              softToggleMenu();
-                            }}
-                          >
-                            <Icon
-                              className="is-light p-side-navigation__icon"
-                              name="power-off"
-                            />{" "}
-                            Log out
-                          </a>
-                        </li>
-                      )}
-                    </>
-                  )}
-                  {!isAuthenticated && (
-                    <>
-                      <li className="p-side-navigation__item">
-                        <NavLink
-                          to="/ui/login"
-                          title="Login"
-                          onClick={softToggleMenu}
-                        >
-                          <Icon
-                            className="is-light p-side-navigation__icon"
-                            name="profile"
-                          />{" "}
-                          Login
-                        </NavLink>
-                      </li>
-                    </>
-                  )}
-                </ul>
-                <ul
-                  className={classnames(
-                    "p-side-navigation__list sidenav-bottom-ul",
-                    {
-                      "authenticated-nav": isAuthenticated,
-                    },
-                  )}
-                >
-                  <li className="p-side-navigation__item">
-                    <a
-                      className="p-side-navigation__link"
-                      href={docBaseLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="Documentation"
-                    >
-                      <Icon
-                        className="p-side-navigation__icon"
-                        name="information"
-                      />{" "}
-                      Documentation
-                    </a>
-                  </li>
-                  <li className="p-side-navigation__item">
-                    <a
-                      className="p-side-navigation__link"
-                      href="https://discourse.ubuntu.com/c/lxd/126"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="Discussion"
-                    >
-                      <Icon
-                        className="is-light p-side-navigation__icon"
-                        name="share"
-                      />{" "}
-                      Discussion
-                    </a>
-                  </li>
-                  <li className="p-side-navigation__item">
-                    <a
-                      className="p-side-navigation__link"
-                      href="https://github.com/canonical/lxd-ui/issues/new"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="Report a bug"
-                    >
-                      <Icon
-                        className="is-light p-side-navigation__icon"
-                        name="code"
-                      />{" "}
-                      Report a bug
-                    </a>
-                  </li>
-                </ul>
-              </div>
-            </div>
-            <div
-              className={classnames("sidenav-toggle-wrapper", {
-                "authenticated-nav": isAuthenticated,
-              })}
-            >
-              <Button
-                appearance="base"
-                aria-label={`${
-                  menuCollapsed ? "expand" : "collapse"
-                } main navigation`}
-                hasIcon
-                dense
-                className="sidenav-toggle is-dark u-no-margin l-navigation-collapse-toggle u-hide--small"
-                onClick={hardToggleMenu}
-              >
-                <Icon light name="sidebar-toggle" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </nav>
+        <Button
+          appearance="base"
+          aria-label={`${
+            menuCollapsed ? "expand" : "collapse"
+          } main navigation`}
+          hasIcon
+          dense
+          className="sidenav-toggle is-dark u-no-margin l-navigation-collapse-toggle u-hide--small"
+          onClick={hardToggleMenu}
+        >
+          <Icon light name="sidebar-toggle" />
+        </Button>
+      </div>
     </>
   );
 };
